@@ -25,7 +25,9 @@ func main() {
 	client := pb.NewGreeterClient(conn)
 
 	// unary RPC
-	err := SayHello(client)
+	err := SayHello(client, &pb.HelloRequest{
+		Name: "AndySayHello",
+	})
 	if err != nil {
 		log.Fatalf("SayHello err: %v", err)
 	}
@@ -37,18 +39,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("SayList err: %v", err)
 	}
+
+	// client-side streaming RPC
+	err = SayRecord(client, &pb.HelloRequest{
+		Name: "AndySayRecord",
+	})
+	if err != nil {
+		log.Fatalf("SayRecord err: %v", err)
+	}
 }
 
 // SayHello is
-func SayHello(client pb.GreeterClient) error {
-	resp, err := client.SayHello(context.Background(), &pb.HelloRequest{
-		Name: "eddycjy",
-	})
+func SayHello(client pb.GreeterClient, r *pb.HelloRequest) error {
+	resp, err := client.SayHello(context.Background(), r)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("client.SayHello resp: %s", resp.Message)
+	log.Printf("client.SayHello resp: %s", resp.GetMessage())
 	return nil
 }
 
@@ -67,8 +75,31 @@ func SayList(client pb.GreeterClient, r *pb.HelloRequest) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("client.SayList resp: %v", resp.Message)
+		log.Printf("client.SayList resp: %v", resp.GetMessage())
 	}
+
+	return nil
+}
+
+// SayRecord is
+func SayRecord(client pb.GreeterClient, r *pb.HelloRequest) error {
+	stream, err := client.SayRecord(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for n := 0; n < 6; n++ {
+		err := stream.Send(r)
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		return err
+	}
+	log.Printf("client.SayRecord resp: %v", resp.GetMessage())
 
 	return nil
 }

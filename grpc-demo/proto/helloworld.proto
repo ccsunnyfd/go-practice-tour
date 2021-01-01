@@ -7,6 +7,7 @@ option go_package = ".;github_com_ccsunnyfd_practice_grpc_demo_proto_helloworld"
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply) {}
   rpc SayList (HelloRequest) returns (stream HelloReply) {}
+  rpc SayRecord (stream HelloRequest) returns (HelloReply) {}
 }
 
 message HelloRequest {

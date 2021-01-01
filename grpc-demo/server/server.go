@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
+	"log"
 	"net"
 
 	pb "github.com/ccsunnyfd/practice/grpc-demo/proto"
@@ -28,13 +30,28 @@ func (s *GreeterServer) SayHello(ctx context.Context, r *pb.HelloRequest) (*pb.H
 func (s *GreeterServer) SayList(r *pb.HelloRequest, stream pb.Greeter_SayListServer) error {
 	for n := 0; n <= 6; n++ {
 		err := stream.Send(&pb.HelloReply{
-			Message: "hello.list",
+			Message: "hello.list(" + r.GetName() + ")",
 		})
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// SayRecord is
+func (s *GreeterServer) SayRecord(stream pb.Greeter_SayRecordServer) error {
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&pb.HelloReply{Message: "hello.record"})
+		}
+		if err != nil {
+			return err
+		}
+		log.Printf("hello.record(%v)", req)
+	}
 }
 
 func main() {
