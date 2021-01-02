@@ -54,6 +54,28 @@ func (s *GreeterServer) SayRecord(stream pb.Greeter_SayRecordServer) error {
 	}
 }
 
+// SayRoute is
+func (s *GreeterServer) SayRoute(stream pb.Greeter_SayRouteServer) error {
+	n := 0
+	for {
+		err := stream.Send(&pb.HelloReply{
+			Message: "hello.route",
+		})
+		if err != nil {
+			return err
+		}
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		n++
+		log.Printf("receive request(%v)", req)
+	}
+}
+
 func main() {
 	server := grpc.NewServer()
 	pb.RegisterGreeterServer(server, &GreeterServer{})

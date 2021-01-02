@@ -47,6 +47,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("SayRecord err: %v", err)
 	}
+
+	// bidiretional streaming rpc
+	err = SayRoute(client, &pb.HelloRequest{
+		Name: "AndySayRoute",
+	})
+	if err != nil {
+		log.Fatalf("SayRoute err: %v", err)
+	}
 }
 
 // SayHello is
@@ -100,6 +108,37 @@ func SayRecord(client pb.GreeterClient, r *pb.HelloRequest) error {
 		return err
 	}
 	log.Printf("client.SayRecord resp: %v", resp.GetMessage())
+
+	return nil
+}
+
+// SayRoute is
+func SayRoute(client pb.GreeterClient, r *pb.HelloRequest) error {
+	stream, err := client.SayRoute(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for n := 0; n <= 6; n++ {
+		err := stream.Send(r)
+		if err != nil {
+			return err
+		}
+
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		log.Printf("receive SayRoute resp from server: %v", resp.GetMessage())
+	}
+
+	err = stream.CloseSend()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
