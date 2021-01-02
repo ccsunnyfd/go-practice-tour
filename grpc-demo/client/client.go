@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"sync"
 
 	pb "github.com/ccsunnyfd/practice/grpc-demo/proto"
 	"google.golang.org/grpc"
@@ -119,26 +120,37 @@ func SayRoute(client pb.GreeterClient, r *pb.HelloRequest) error {
 		return err
 	}
 
-	for n := 0; n <= 6; n++ {
-		err := stream.Send(r)
-		if err != nil {
-			return err
-		}
+	var wg sync.WaitGroup
 
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		log.Printf("receive SayRoute resp from server: %v", resp.GetMessage())
-	}
+	wg.Add(2)
 
+	go func() {
+		defer wg.Done()
+		for n := 0; n <= 6; n++ {
+			if err := stream.Send(r); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for n := 0; n <= 6; n++ {
+			resp, err := stream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatal(err)
+			}
+			log.Printf("receive SayRoute resp from server: %v", resp.GetMessage())
+		}
+	}()
+
+	wg.Wait()
 	err = stream.CloseSend()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

@@ -56,23 +56,23 @@ func (s *GreeterServer) SayRecord(stream pb.Greeter_SayRecordServer) error {
 
 // SayRoute is
 func (s *GreeterServer) SayRoute(stream pb.Greeter_SayRouteServer) error {
-	n := 0
 	for {
-		err := stream.Send(&pb.HelloReply{
-			Message: "hello.route",
-		})
+		args, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		reply := &pb.HelloReply{
+			Message: "hello: " + args.GetName(),
+		}
+
+		err = stream.Send(reply)
 		if err != nil {
 			return err
 		}
-		req, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		n++
-		log.Printf("receive request(%v)", req)
 	}
 }
 
